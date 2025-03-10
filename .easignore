@@ -35,11 +35,7 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
-app-example
-
-google-services.json
+app-example         
 
 /ios
 /android
-
-/app/build.gradle.kts

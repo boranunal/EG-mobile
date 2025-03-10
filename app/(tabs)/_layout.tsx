@@ -43,7 +43,12 @@ export default function TabLayout() {
           ),
         }} 
       />
-
+      <Tabs.Screen 
+      name="image" 
+      options={{ 
+          href: null,
+        }} 
+      />
     </Tabs>
   );
 }

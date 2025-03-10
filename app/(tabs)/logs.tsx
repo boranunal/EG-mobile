@@ -1,51 +1,66 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
-import * as FileSystem from 'expo-file-system';
 
-const ipv4 = '192.168.0.22';
+
+const ipv4 = '16.171.140.7';
 const port = '3000';
 
+interface FileItem {
+  name: string;
+  added: string;  // or Date if you want to use Date objects directly
+}
+
 const LogScreen = () => {
-    const [imageUri, setImageUri] = useState<string | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null); // To display any errors
-    const [files, setFiles] = useState([]);
-    const [selectedFileUri, setSelectedFileUri] = useState<string | null>(null);
-  
-    useEffect(() => {
-      // Fetch the list of files from the server
-      const getFileList = async () => {
-        try {
-          const response = await fetch('http://'+ipv4+':'+port+'/list-files'); // Replace with your server's IP
-          const data = await response.json();
-          setFiles(data.files); // Save the list of files
-        } catch (error) {
-          console.error('Error fetching file list:', error);
-        }
-      };
-      getFileList(); // Call the function to fetch the list of files
-    }, []);
+  const [files, setFiles] = useState<FileItem[]>([]);  // Use the FileItem type for files
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null); // For displaying any errors
+  const [selectedFileUri, setSelectedFileUri] = useState<string | null>(null);
 
-    const handleFileSelect = (fileName: String) => {
-      const fileUri = 'http://'+ipv4+':'+port+'/get-photo/'+fileName; // Construct file URL
-      setSelectedFileUri(fileUri); // Set the URI of the selected file
+  useEffect(() => {
+    const getFileList = async () => {
+      try {
+        const response = await fetch(`http://${ipv4}:${port}/list-files`);
+        const data = await response.json();
+        setFiles(data.files); // Set the list of files
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching file list:', error);
+        setError('Failed to load files');
+        setLoading(false);
+      }
     };
+    getFileList(); // Call the function to fetch the file list
+  }, []);
 
+  const handleFileSelect = (fileName: string) => {
+    const fileUri = `http://${ipv4}:${port}/get-photo/${fileName}`; // Construct file URL
+    setSelectedFileUri(fileUri); // Set the URI of the selected file
+  };
+
+  // Render each file in the list
+  const renderFileItem = ({ item }: { item: FileItem }) => {
+    return (
+      <TouchableOpacity onPress={() => handleFileSelect(item.name)} style={styles.button}>
+        <Text style={styles.buttonText}>{item.name}</Text>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Available Files</Text>
 
-      {/* List the files */}
-      <FlatList
-        data={files}
-        keyExtractor={(item) => item}
-        renderItem={({ item }) => (
-          <TouchableOpacity onPress={() => handleFileSelect(item)} style={styles.button}>
-            <Text style={styles.buttonText}>{item}</Text>
-          </TouchableOpacity>
-        )}
-      />
+      {loading ? (
+        <Text>Loading...</Text>
+      ) : error ? (
+        <Text>{error}</Text> // Display error message if any
+      ) : (
+        <FlatList
+          data={files}
+          keyExtractor={(item) => item.name}  // Use unique key for each file
+          renderItem={renderFileItem}
+        />
+      )}
 
       {/* Display the selected file */}
       {selectedFileUri ? (
@@ -57,16 +72,6 @@ const LogScreen = () => {
   );
 };
 
-// Function to convert Blob to Base64
-const blobToBase64 = (blob: Blob): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob); // Converts the Blob into a Base64 string
-    });
-  };
-// Define some basic styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -96,4 +101,5 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
 });
+
 export default LogScreen;
