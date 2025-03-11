@@ -5,6 +5,7 @@ node_modules/
 
 # Expo
 .expo/
+.idea/
 dist/
 web-build/
 expo-env.d.ts
@@ -43,3 +44,9 @@ google-services.json
 /android
 
 /app/build.gradle.kts
+
+eg-mobile-32b04-firebase-adminsdk-fbsvc-622ddc7031.json
+build.gradle.kts
+tempCodeRunnerFile.py
+send.py
+expo-env.d.ts

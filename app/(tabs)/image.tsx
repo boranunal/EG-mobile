@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
 import { useLocalSearchParams } from 'expo-router'; // Hook to read URL params
 
-const ipv4 = '16.171.140.7';
+const ipv4 = '192.168.0.16';
 
 const ImagePage = () => {
   const { fileName } = useLocalSearchParams(); // Retrieve fileName from query params

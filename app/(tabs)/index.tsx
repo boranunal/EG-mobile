@@ -3,57 +3,62 @@ import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native
 import axios from 'axios';
 import { Link } from 'expo-router'; // Import Link from expo-router
 
-interface File {
+interface Directory {
   name: string;
-  added: string;
 }
 
-const ipv4 = '16.171.140.7';
+const ipv4 = '192.168.0.16';  // Server's IP address
 
 const HomePage = () => {
-  const [files, setFiles] = useState<File[]>([]);
+  const [directories, setDirectories] = useState<string[]>([]); // Directory as an array of strings
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchFiles = async () => {
+    const fetchDirectories = async () => {
       try {
-        const response = await axios.get(`http://${ipv4}:3000/list-files`);
-        setFiles(response.data.files);
+        // Fetch the list of directories from the server
+        const response = await axios.get(`http://${ipv4}:3000/list-directories`);
+        console.log("Fetched directories:", response.data.directories);  // Log the directories for debugging
+        
+        // Validate and set the directories
+        if (Array.isArray(response.data.directories)) {
+          setDirectories(response.data.directories); // Save the list of directories
+        } else {
+          setError('Invalid directory data');
+        }
         setLoading(false);
       } catch (err) {
-        console.error('Error fetching files:', err);
-        setError('Failed to load files');
+        console.error('Error fetching directories:', err);
+        setError('Failed to load directories');
         setLoading(false);
       }
     };
 
-    fetchFiles();
+    fetchDirectories(); // Fetch directories from the server
   }, []);
 
-  const renderFileItem = ({ item }: { item: File }) => (
+  const renderDirectoryItem = ({ item }: { item: string }) => (
     <TouchableOpacity style={styles.fileItem}>
-      {/* Use Link component for navigation */}
-      <Link href={`/image?fileName=${item.name}`}>
-        <Text style={styles.fileName}>{item.name}</Text>
-        <Text style={styles.fileDate}>Added: {new Date(item.added).toLocaleString()}</Text>
+      <Link href={`/logs?directory=${item}`}> {/* Link to navigate with directory name */}
+        <Text style={styles.fileName}>{item}</Text> {/* item is a string now */}
       </Link>
     </TouchableOpacity>
   );
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Latest Uploaded Files</Text>
+      <Text style={styles.title}>Available Directories</Text>
 
       {loading ? (
         <Text>Loading...</Text>
       ) : error ? (
-        <Text>{error}</Text>
+        <Text>{error}</Text> // Display error message if any
       ) : (
         <FlatList
-          data={files}
-          keyExtractor={(item) => item.name}
-          renderItem={renderFileItem}
+          data={directories} // directories is an array of strings
+          keyExtractor={(item) => item}  // Use the directory name (string) as the key
+          renderItem={renderDirectoryItem}
         />
       )}
     </View>
@@ -84,10 +89,6 @@ const styles = StyleSheet.create({
   fileName: {
     fontSize: 18,
     fontWeight: 'bold',
-  },
-  fileDate: {
-    fontSize: 14,
-    color: '#555',
   },
 });
 

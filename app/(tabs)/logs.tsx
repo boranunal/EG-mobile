@@ -1,27 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { useLocalSearchParams } from 'expo-router'; // Correct hook to access query params
 
-
-const ipv4 = '16.171.140.7';
+const ipv4 = '192.168.0.16';
 const port = '3000';
 
-interface FileItem {
-  name: string;
-  added: string;  // or Date if you want to use Date objects directly
-}
-
 const LogScreen = () => {
-  const [files, setFiles] = useState<FileItem[]>([]);  // Use the FileItem type for files
+  const [files, setFiles] = useState<string[]>([]); // List of image files in the directory
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null); // For displaying any errors
+  const [error, setError] = useState<string | null>(null);
   const [selectedFileUri, setSelectedFileUri] = useState<string | null>(null);
+
+  const { directory } = useLocalSearchParams(); // Extract 'directory' from query params
 
   useEffect(() => {
     const getFileList = async () => {
       try {
-        const response = await fetch(`http://${ipv4}:${port}/list-files`);
+        const response = await fetch(`http://${ipv4}:${port}/list-files/${directory}`);
         const data = await response.json();
-        setFiles(data.files); // Set the list of files
+        
+        if (data.error) {
+          throw new Error(data.error);
+        }
+        
+        setFiles(data.files); // Set the files array
         setLoading(false);
       } catch (error) {
         console.error('Error fetching file list:', error);
@@ -29,44 +31,43 @@ const LogScreen = () => {
         setLoading(false);
       }
     };
-    getFileList(); // Call the function to fetch the file list
-  }, []);
+
+    if (directory) {
+      getFileList(); // Fetch the file list for the given directory
+    }
+  }, [directory]);
 
   const handleFileSelect = (fileName: string) => {
-    const fileUri = `http://${ipv4}:${port}/get-photo/${fileName}`; // Construct file URL
-    setSelectedFileUri(fileUri); // Set the URI of the selected file
+    const fileUri = `http://${ipv4}:${port}/get-photo/${directory}/${fileName}`; // Construct file URL
+    setSelectedFileUri(fileUri); // Set the URI for the selected file to be displayed
   };
 
-  // Render each file in the list
-  const renderFileItem = ({ item }: { item: FileItem }) => {
-    return (
-      <TouchableOpacity onPress={() => handleFileSelect(item.name)} style={styles.button}>
-        <Text style={styles.buttonText}>{item.name}</Text>
-      </TouchableOpacity>
-    );
-  };
+  const renderFileItem = ({ item }: { item: string }) => (
+    <TouchableOpacity onPress={() => handleFileSelect(item)} style={styles.button}>
+      <Text style={styles.buttonText}>{item}</Text>
+    </TouchableOpacity>
+  );
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Available Files</Text>
+      <Text style={styles.title}>Files in {directory}</Text>
 
       {loading ? (
-        <Text>Loading...</Text>
+        <Text>Loading...</Text> // Show loading message
       ) : error ? (
-        <Text>{error}</Text> // Display error message if any
+        <Text>{error}</Text> // Show error message if any
       ) : (
         <FlatList
           data={files}
-          keyExtractor={(item) => item.name}  // Use unique key for each file
+          keyExtractor={(item) => item} // Ensure unique key for each file
           renderItem={renderFileItem}
         />
       )}
 
-      {/* Display the selected file */}
       {selectedFileUri ? (
         <Image source={{ uri: selectedFileUri }} style={styles.image} />
       ) : (
-        <Text>Select a file to view</Text>
+        <Text>Select a file to view</Text> // Show this when no file is selected
       )}
     </View>
   );
@@ -93,7 +94,6 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#FFF',
     fontSize: 16,
-    textTransform: 'none', // Ensure text is not automatically capitalized
   },
   image: {
     width: 300,
